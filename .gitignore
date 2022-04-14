@@ -127,3 +127,17 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# output
+output/
+data/
+
+# db
+*.db
+*.sqlite
+*.sqlite-journal
+*.exe
+*.csv
+*.xlsx
+# login
+*secrets*
