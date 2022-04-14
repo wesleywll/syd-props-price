@@ -5,6 +5,18 @@ from dotenv import load_dotenv
 load_dotenv()
 # /src
 SRC = dirname(abspath(__file__))
+DATA_DIR = join(SRC, 'data')
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+
+CHARTS_DIR = join(SRC, 'charts')
+if not os.path.exists(CHARTS_DIR):
+    os.makedirs(CHARTS_DIR)
+
+HTML_DIR = join(SRC, 'html')
+if not os.path.exists(HTML_DIR):
+    os.makedirs(HTML_DIR)
+
 
 # path to Australia dataset
 AUS_PATH = os.environ.get("AUS_DATA_ROOT")
