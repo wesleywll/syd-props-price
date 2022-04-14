@@ -40,16 +40,16 @@ def get_loc_map(df, loc_bound, color_by="slope"):
         color_continuous_scale="Inferno",
     )
     fig.update_layout(mapbox_style="open-street-map")
-    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+    fig.update_layout(margin={"r": 0, "t": 5, "l": 0, "b": 5})
     return fig
 
 
 def get_trend_plot(df, loc):
+    df_plot = (
+        df[df.locality == loc].groupby(["property_type", "year"]).median().reset_index()
+    )
     fig = px.line(
-        df[df.locality == loc]
-        .groupby(["property_type", "year"])
-        .median()
-        .reset_index(),
+        df_plot,
         x="year",
         y="price",
         color="property_type",
@@ -71,6 +71,7 @@ app.layout = dbc.Container(
     children=[
         dbc.Row(
             [
+                dbc.Col(html.Div(dcc.Graph(id="click-display")), width=6),
                 dbc.Col(
                     html.Div(
                         dcc.Graph(
@@ -78,14 +79,15 @@ app.layout = dbc.Container(
                             figure=get_loc_map(
                                 price_by_loc, loc_bound_trimmed, "price"
                             ),
-                            style={"width": "80vw", "height": "50vh"},
+                            style={"width": "45vw", "height": "100vh"},
                         )
                     ),
                     width=6,
                 ),
-                dbc.Col(html.Div(dcc.Graph(id="click-display")), width=6),
-            ]
-        ),
+            ],
+            justify="between",
+            align='center',
+        )
     ]
 )
 
