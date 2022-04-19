@@ -66,9 +66,13 @@ price_by_loc = (
 
 
 # rendering
-app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = Dash(
+    __name__,
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    meta_tags=[dict(name="viewport", content="width=device-width, initial-scale=1.0")],
+)
 app.layout = dbc.Container(
-    children=[
+    [
         dbc.Row(
             [
                 dbc.Col(html.Div(dcc.Graph(id="click-display")), width=6),
@@ -79,16 +83,17 @@ app.layout = dbc.Container(
                             figure=get_loc_map(
                                 price_by_loc, loc_bound_trimmed, "price"
                             ),
-                            style={"width": "45vw", "height": "100vh"},
+                            # style={"width": "45vw", "height": "100vh"},
                         )
                     ),
                     width=6,
                 ),
             ],
             justify="between",
-            align='center',
+            align="center",
         )
-    ]
+    ],
+    fluid=True,
 )
 
 
