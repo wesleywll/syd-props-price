@@ -6,22 +6,20 @@ import pandas as pd
 import json
 from src.paths import DATA_DIR, LOC_BOUND_PATH
 import os
-import seaborn as sns
-import matplotlib.pyplot as plt
 from plotly.tools import mpl_to_plotly
+from src.paths import DATA_DIR, LOC_BOUND_PATH, SUBURB_COORD_PATH
 
 # import data
 dataset = pd.read_csv(os.path.join(DATA_DIR, "dataset.csv"))  # cleaned dataset
 loc_bound = json.load(open(LOC_BOUND_PATH, "r"))  # locality boundaries geojson
 
-
-def trim_loc_bound(df, loc_bound):
-    zones = df.locality.unique()
+def get_trimmed_bound_data(localities:list):
+    # get trimmed geojson with provided localities
     loc_bound_trimmed = loc_bound.copy()
     loc_bound_trimmed["features"] = [
         feat
         for feat in loc_bound["features"]
-        if feat["properties"]["nsw_loca_2"] in zones
+        if feat["properties"]["nsw_loca_2"] in localities
     ]
     return loc_bound_trimmed
 
@@ -59,7 +57,8 @@ def get_trend_plot(df, loc):
 
 
 # data processing
-loc_bound_trimmed = trim_loc_bound(dataset, loc_bound)
+localities= dataset.locality.unique().tolist()
+loc_bound_trimmed = get_trimmed_bound_data(localities)
 price_by_loc = (
     dataset.query("0<price <=1.5e6")[["locality", "price"]].groupby("locality").median()
 )
