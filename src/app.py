@@ -35,8 +35,16 @@ CBD_COORD = (-33.8708, 151.2073)  # coordinates of Sydney CBD
 # -- data processing
 # annual median price of all suburbs
 df_all_med = (
-    df_rec.groupby(["locality", "property_type", "year"]).median().reset_index()
+    df_rec.groupby(["locality", "property_type", "year"])
+    .median()
+    .reset_index()
+    .sort_values(by=["locality", "property_type", "year"])
 )
+# calculate price and year difference between consecutive rows
+price_diff = df_all_med.groupby(["locality", "property_type"]).price.diff()
+year_diff = df_all_med.groupby(["locality", "property_type"]).year.diff()
+# extrapolate change rate in case of missing years
+df_all_med["rate"] = (price_diff / df_all_med.price) / year_diff
 
 # calculate distance from CBD
 df_sub["dist"] = df_sub.apply(
@@ -186,7 +194,9 @@ app.layout = dbc.Container(
             children=[
                 dbc.Col(
                     children=[
-                        dbc.Card([dbc.CardBody(dcc.Graph(id="fig_price_trend"))]),
+                        dcc.Loading(
+                            dbc.Card([dbc.CardBody(dcc.Graph(id="fig_price_trend"))])
+                        ),
                     ],
                     xs=12,
                     sm=12,
@@ -196,7 +206,9 @@ app.layout = dbc.Container(
                 ),
                 dbc.Col(
                     children=[
-                        dbc.Card([dbc.CardBody(dcc.Graph(id="fig_rate_trend"))]),
+                        dcc.Loading(
+                            dbc.Card([dbc.CardBody(dcc.Graph(id="fig_rate_trend"))])
+                        ),
                     ],
                     xs=12,
                     sm=12,
@@ -248,21 +260,6 @@ def get_loc_map(df, loc_bound, color_key, title=""):
     return fig
 
 
-def get_trend_plot(df, loc):
-    df_plot = (
-        df[df.locality == loc].groupby(["property_type", "year"]).median().reset_index()
-    )
-    fig = px.line(
-        df_plot,
-        x="year",
-        y="price",
-        color="property_type",
-        title=loc,
-    )
-    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
-    return fig
-
-
 # ----------------------------
 # callbacks
 @app.callback(Output("locality", "data"), Input("fig_data_map", "clickData"))
@@ -271,7 +268,7 @@ def map_clicked(clickData):
     if clickData:
         loc = clickData.get("points")[0].get("location")
     else:
-        loc = "SYDNEY"
+        loc = "SYDNEY"  # default locality
     return dict(locality=loc)
 
 
@@ -279,7 +276,32 @@ def map_clicked(clickData):
 def plot_suburb_price_trend(data):
     # locality changed, update plot
     loc = data.get("locality")
-    return get_trend_plot(df_rec, loc)
+    df_plot = df_all_med.query(f'locality=="{loc}"')
+    fig = px.line(
+        df_plot,
+        x="year",
+        y="price",
+        color="property_type",
+        title=loc.title(),
+    )
+    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+    return fig
+
+
+@app.callback(Output("fig_rate_trend", "figure"), Input("locality", "data"))
+def plot_suburb_rate_trend(data):
+    # locality changed, update plot
+    loc = data.get("locality")
+    df_plot = df_all_med.query(f'locality=="{loc}"')
+    fig = px.line(
+        df_plot,
+        x="year",
+        y="rate",
+        color="property_type",
+        title=loc.title(),
+    )
+    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+    return fig
 
 
 @app.callback(
