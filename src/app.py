@@ -23,49 +23,6 @@ def trim_geojson(geojson, select: list):
     return trimmed
 
 
-def get_loc_map(df, loc_bound, color_key, title=""):
-    fig = px.choropleth_mapbox(
-        df.reset_index(),
-        geojson=loc_bound,
-        featureidkey="properties.nsw_loca_2",
-        locations="locality",
-        color=color_key,
-        opacity=0.6,
-        center=dict(lat=-33.869844, lon=151.208285),
-        # height=600,
-        # width=800,
-        color_continuous_scale=[
-            (0, "#0240fa"),
-            (0.5, "#14fa00"),
-            (1, "#fa6000"),
-        ],
-    )
-    fig.update_layout(mapbox_style="open-street-map")
-    fig.update_layout(
-        coloraxis_colorbar=dict(
-            title=title,
-            x=-0.02,
-            ticklabelposition="inside",
-        )
-    )
-    fig.update_layout(margin={"r": 0, "t": 5, "l": 0, "b": 5})
-    return fig
-
-
-def get_trend_plot(df, loc):
-    df_plot = (
-        df[df.locality == loc].groupby(["property_type", "year"]).median().reset_index()
-    )
-    fig = px.line(
-        df_plot,
-        x="year",
-        y="price",
-        color="property_type",
-        title=loc,
-    )
-    return fig
-
-
 # ----------------------------------
 # -- import data
 df_rec = pd.read_csv(os.path.join(DATA_DIR, "dataset.csv"))  # cleaned sales records
@@ -76,11 +33,6 @@ df_sub = pd.read_csv(
 CBD_COORD = (-33.8708, 151.2073)  # coordinates of Sydney CBD
 
 # -- data processing
-# get suburb list
-suburbs = df_rec.locality.unique().tolist()[:]
-# trim boundary data to reduce load time
-json_bound_trim = trim_geojson(geojson=json_bound, select=suburbs)
-
 # annual median price of all suburbs
 df_all_med = (
     df_rec.groupby(["locality", "property_type", "year"]).median().reset_index()
@@ -90,6 +42,11 @@ df_all_med = (
 df_sub["dist"] = df_sub.apply(
     lambda row: dist(row["lat"], row["lon"], CBD_COORD[0], CBD_COORD[1]), axis=1
 )
+# get suburb list
+CBD_DIST = 60  # max suburb distance from CBD (km)
+suburbs = df_sub.query(f"dist <= {CBD_DIST}").locality.unique().tolist()
+# trim boundary data to reduce load time
+json_bound_trim = trim_geojson(geojson=json_bound, select=suburbs)
 
 # apply regression to find annual growth rate
 results = df_all_med.groupby(["locality", "property_type"]).apply(log_regress)
@@ -112,17 +69,20 @@ app = Dash(
     meta_tags=[dict(name="viewport", content="width=device-width, initial-scale=1.0")],
 )
 app.layout = dbc.Container(
-    [
+    fluid=True,
+    children=[
         dbc.Row(
-            [
+            justify="center",
+            align="top",
+            children=[
                 dbc.Col(
                     dbc.Card(
-                        [
+                        children=[
                             dbc.Button(
                                 id="map_toggle_button",
                                 n_clicks=0,
-                                className="bg-dark",
-                                children="Toggle Map",
+                                className="bg-dark card-title",
+                                children="Hide Map",
                             ),
                             dbc.Collapse(
                                 id="map_collapse",
@@ -196,23 +156,21 @@ app.layout = dbc.Container(
                                                         2019: dict(label="2019"),
                                                         2021: dict(label="2021"),
                                                     },
-                                                    tooltip={"placement": "top", "always_visible": True},
-                                                    className='pt-5 '
+                                                    tooltip={
+                                                        "placement": "top",
+                                                        "always_visible": True,
+                                                    },
+                                                    className="pt-5 ",
                                                 )
                                             ],
                                         ),
-                                        dcc.Graph(
-                                            id="data_map",
-                                            figure=get_loc_map(
-                                                df_all_med,
-                                                json_bound_trim,
-                                                color_key="price",
-                                            ),
+                                        dcc.Loading(
+                                            dcc.Graph(id="fig_data_map"),
                                         ),
                                     ],
                                 ),
                             ),
-                        ]
+                        ],
                     ),
                     xs=12,
                     sm=12,
@@ -220,8 +178,26 @@ app.layout = dbc.Container(
                     lg=6,
                     xl=6,
                 ),
+            ],
+        ),
+        dbc.Row(
+            justify="center",
+            align="top",
+            children=[
                 dbc.Col(
-                    dbc.Card([dbc.CardBody(dcc.Graph(id="click-display"))]),
+                    children=[
+                        dbc.Card([dbc.CardBody(dcc.Graph(id="fig_price_trend"))]),
+                    ],
+                    xs=12,
+                    sm=12,
+                    md=12,
+                    lg=6,
+                    xl=6,
+                ),
+                dbc.Col(
+                    children=[
+                        dbc.Card([dbc.CardBody(dcc.Graph(id="fig_rate_trend"))]),
+                    ],
                     xs=12,
                     sm=12,
                     md=12,
@@ -229,42 +205,103 @@ app.layout = dbc.Container(
                     xl=6,
                 ),
             ],
-            justify="between",
-            align="top",
-        )
+        ),
+        # stores for shared values
+        dcc.Store(id="locality"),
+        dcc.Store(id="year"),
+        dcc.Store(id="prop_type"),
+        dcc.Store(id="data_type"),
     ],
-    fluid=True,
 )
 
 
+# ------------------
+# plot functions
+
+
+def get_loc_map(df, loc_bound, color_key, title=""):
+    fig = px.choropleth_mapbox(
+        df.reset_index(),
+        geojson=loc_bound,
+        featureidkey="properties.nsw_loca_2",
+        locations="locality",
+        color=color_key,
+        opacity=0.6,
+        center=dict(lat=-33.869844, lon=151.208285),
+        # height=600,
+        # width=800,
+        color_continuous_scale=[
+            (0, "#0240fa"),
+            (0.5, "#14fa00"),
+            (1, "#fa6000"),
+        ],
+    )
+    fig.update_layout(mapbox_style="open-street-map")
+    fig.update_layout(
+        coloraxis_colorbar=dict(
+            title=title,
+            x=-0.01,
+            ticklabelposition="inside",
+        )
+    )
+    fig.update_layout(margin={"r": 0, "t": 5, "l": 0, "b": 5})
+    return fig
+
+
+def get_trend_plot(df, loc):
+    df_plot = (
+        df[df.locality == loc].groupby(["property_type", "year"]).median().reset_index()
+    )
+    fig = px.line(
+        df_plot,
+        x="year",
+        y="price",
+        color="property_type",
+        title=loc,
+    )
+    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+    return fig
+
+
+# ----------------------------
 # callbacks
-@app.callback(Output("click-display", "figure"), Input("data_map", "clickData"))
-def display_click_data(clickData):
-    # show chart for the suburb clicked on map
+@app.callback(Output("locality", "data"), Input("fig_data_map", "clickData"))
+def map_clicked(clickData):
+    # data map clicked, update locality in store
     if clickData:
         loc = clickData.get("points")[0].get("location")
-        return get_trend_plot(df_rec, loc)
     else:
-        return {}
+        loc = "SYDNEY"
+    return dict(locality=loc)
+
+
+@app.callback(Output("fig_price_trend", "figure"), Input("locality", "data"))
+def plot_suburb_price_trend(data):
+    # locality changed, update plot
+    loc = data.get("locality")
+    return get_trend_plot(df_rec, loc)
 
 
 @app.callback(
-    Output("map_collapse", "is_open"),
+    [Output("map_collapse", "is_open"), Output("map_toggle_button", "children")],
     Input("map_toggle_button", "n_clicks"),
     State("map_collapse", "is_open"),
 )
 def toggle_map_collapse(n_clicks, is_open):
+    txt = "Hide Map" if is_open else "Show Map"
     if n_clicks:
-        return not is_open
-    return is_open
+        new_is_open = not is_open
+        txt = "Hide Map" if new_is_open else "Show Map"
+        return new_is_open, txt
+    return is_open, txt
 
 
 @app.callback(
-    Output("data_map", "figure"),
+    Output("fig_data_map", "figure"),
     [
         Input("map_option_radio_datakey", "value"),
         Input("map_option_radio_prop_type", "value"),
-        Input("year_slider",'value')
+        Input("year_slider", "value"),
     ],
 )
 def change_data_map(datakey, prop_type, year=2021):
