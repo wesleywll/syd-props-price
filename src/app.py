@@ -77,7 +77,7 @@ CBD_COORD = (-33.8708, 151.2073)  # coordinates of Sydney CBD
 
 # -- data processing
 # get suburb list
-suburbs = df_rec.locality.unique().tolist()[:10]
+suburbs = df_rec.locality.unique().tolist()[:]
 # trim boundary data to reduce load time
 json_bound_trim = trim_geojson(geojson=json_bound, select=suburbs)
 
@@ -133,7 +133,7 @@ app.layout = dbc.Container(
                                             [
                                                 dbc.Col(
                                                     width=6,
-                                                    className='radio-group',
+                                                    className="radio-group",
                                                     children=[
                                                         dbc.RadioItems(
                                                             id="map_option_radio_datakey",
@@ -157,7 +157,7 @@ app.layout = dbc.Container(
                                                 ),
                                                 dbc.Col(
                                                     width=6,
-                                                    className='radio-group',
+                                                    className="radio-group",
                                                     children=[
                                                         dbc.RadioItems(
                                                             id="map_option_radio_prop_type",
@@ -181,8 +181,28 @@ app.layout = dbc.Container(
                                                 ),
                                             ]
                                         ),
+                                        dbc.Row(
+                                            justify="center",
+                                            children=[
+                                                dcc.Slider(
+                                                    id="year_slider",
+                                                    min=2000,
+                                                    max=2021,
+                                                    step=1,
+                                                    value=2021,
+                                                    marks={
+                                                        2000: dict(label="2000"),
+                                                        2008: dict(label="2008"),
+                                                        2019: dict(label="2019"),
+                                                        2021: dict(label="2021"),
+                                                    },
+                                                    tooltip={"placement": "top", "always_visible": True},
+                                                    className='pt-5 '
+                                                )
+                                            ],
+                                        ),
                                         dcc.Graph(
-                                            id="loc-map",
+                                            id="data_map",
                                             figure=get_loc_map(
                                                 df_all_med,
                                                 json_bound_trim,
@@ -218,7 +238,7 @@ app.layout = dbc.Container(
 
 
 # callbacks
-@app.callback(Output("click-display", "figure"), Input("loc-map", "clickData"))
+@app.callback(Output("click-display", "figure"), Input("data_map", "clickData"))
 def display_click_data(clickData):
     # show chart for the suburb clicked on map
     if clickData:
@@ -237,6 +257,31 @@ def toggle_map_collapse(n_clicks, is_open):
     if n_clicks:
         return not is_open
     return is_open
+
+
+@app.callback(
+    Output("data_map", "figure"),
+    [
+        Input("map_option_radio_datakey", "value"),
+        Input("map_option_radio_prop_type", "value"),
+        Input("year_slider",'value')
+    ],
+)
+def change_data_map(datakey, prop_type, year=2021):
+    if datakey == "price":
+        df = pd.merge(
+            df_sub,
+            df_all_med.query(f"property_type=='{prop_type}' & year=={year}")[
+                ["locality", "price"]
+            ],
+            on="locality",
+            how="left",
+        )
+        return get_loc_map(df, json_bound_trim, color_key=datakey)
+    elif datakey == "rate":
+        return get_loc_map(
+            df_sub, json_bound_trim, color_key=f"annual_rate_{prop_type}"
+        )
 
 
 if __name__ == "__main__":
