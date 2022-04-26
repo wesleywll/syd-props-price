@@ -3,26 +3,24 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import pandas as pd
+import numpy as np
 import json
-from src.paths import DATA_DIR, LOC_BOUND_PATH
+from src.paths import DATA_DIR, LOC_BOUND_PATH, AUS_PATH
 import os
 from plotly.tools import mpl_to_plotly
 from src.paths import DATA_DIR, LOC_BOUND_PATH, SUBURB_COORD_PATH
-
-# import data
-dataset = pd.read_csv(os.path.join(DATA_DIR, "dataset.csv"))  # cleaned dataset
-loc_bound = json.load(open(LOC_BOUND_PATH, "r"))  # locality boundaries geojson
+from src.func import log_regress, dist, million, percent
 
 
-def get_trimmed_bound_data(localities: list):
+def trim_geojson(geojson, select: list):
     # get trimmed geojson with provided localities
-    loc_bound_trimmed = loc_bound.copy()
-    loc_bound_trimmed["features"] = [
+    trimmed = geojson.copy()
+    trimmed["features"] = [
         feat
-        for feat in loc_bound["features"]
-        if feat["properties"]["nsw_loca_2"] in localities
+        for feat in geojson["features"]
+        if feat["properties"]["nsw_loca_2"] in select
     ]
-    return loc_bound_trimmed
+    return trimmed
 
 
 def get_loc_map(df, loc_bound, color_key, title=""):
@@ -38,7 +36,7 @@ def get_loc_map(df, loc_bound, color_key, title=""):
         # width=800,
         color_continuous_scale=[
             (0, "#0240fa"),
-            (0.5, '#14fa00'),
+            (0.5, "#14fa00"),
             (1, "#fa6000"),
         ],
     )
@@ -47,7 +45,7 @@ def get_loc_map(df, loc_bound, color_key, title=""):
         coloraxis_colorbar=dict(
             title=title,
             x=-0.02,
-            ticklabelposition='inside',
+            ticklabelposition="inside",
         )
     )
     fig.update_layout(margin={"r": 0, "t": 5, "l": 0, "b": 5})
@@ -68,14 +66,45 @@ def get_trend_plot(df, loc):
     return fig
 
 
-# data processing
-localities = dataset.locality.unique().tolist()
-loc_bound_trimmed = get_trimmed_bound_data(localities[:10])
-price_by_loc = (
-    dataset.query("0<price <=3e6")[["locality", "price"]].groupby("locality").median()
+# ----------------------------------
+# -- import data
+df_rec = pd.read_csv(os.path.join(DATA_DIR, "dataset.csv"))  # cleaned sales records
+json_bound = json.load(open(LOC_BOUND_PATH, "r"))  # locality boundaries geojson
+df_sub = pd.read_csv(
+    os.path.join(AUS_PATH, "nsw_suburb_coord.csv")
+)  # coordinates of suburbs
+CBD_COORD = (-33.8708, 151.2073)  # coordinates of Sydney CBD
+
+# -- data processing
+# get suburb list
+suburbs = df_rec.locality.unique().tolist()[:10]
+# trim boundary data to reduce load time
+json_bound_trim = trim_geojson(geojson=json_bound, select=suburbs)
+
+# annual median price of all suburbs
+df_all_med = (
+    df_rec.groupby(["locality", "property_type", "year"]).median().reset_index()
 )
 
+# calculate distance from CBD
+df_sub["dist"] = df_sub.apply(
+    lambda row: dist(row["lat"], row["lon"], CBD_COORD[0], CBD_COORD[1]), axis=1
+)
 
+# apply regression to find annual growth rate
+results = df_all_med.groupby(["locality", "property_type"]).apply(log_regress)
+results["annual_rate"] = np.exp(results.slope) - 1
+results = results.unstack()
+results.columns = ["_".join(col_pair) for col_pair in results.columns]
+results.reset_index(inplace=True)
+# merge results into suburb data
+df_sub = pd.merge(df_sub, results, on="locality", how="left")
+
+# -- Summary --
+# df_all_med: contains medians of all suburbs, grouped by locality, property_type and year
+# df_sub: contains details of suburbs, including coordinates, CBD distance and regression results
+
+# ----------------------------------
 # rendering
 app = Dash(
     __name__,
@@ -100,25 +129,63 @@ app.layout = dbc.Container(
                                 is_open=True,
                                 children=dbc.CardBody(
                                     children=[
-                                        dbc.RadioItems(
-                                            id="map_option_radio",
-                                            className="btn-group d-flex flex-grow-1 justify-content-center",
-                                            inputClassName="btn-check",
-                                            labelClassName="btn btn-outline-primary",
-                                            labelCheckedClassName="active",
-                                            options=[
-                                                dict(
-                                                    label="Median Price", value="price"
+                                        dbc.Row(
+                                            [
+                                                dbc.Col(
+                                                    width=6,
+                                                    className='radio-group',
+                                                    children=[
+                                                        dbc.RadioItems(
+                                                            id="map_option_radio_datakey",
+                                                            className="btn-group d-flex flex-grow-1 justify-content-center",
+                                                            inputClassName="btn-check",
+                                                            labelClassName="btn btn-outline-secondary",
+                                                            labelCheckedClassName="active",
+                                                            options=[
+                                                                dict(
+                                                                    label="Price",
+                                                                    value="price",
+                                                                ),
+                                                                dict(
+                                                                    label="Rate",
+                                                                    value="rate",
+                                                                ),
+                                                            ],
+                                                            value="price",
+                                                        )
+                                                    ],
                                                 ),
-                                                dict(label="Growth Rate", value="rate"),
-                                            ],
-                                            value="price",
+                                                dbc.Col(
+                                                    width=6,
+                                                    className='radio-group',
+                                                    children=[
+                                                        dbc.RadioItems(
+                                                            id="map_option_radio_prop_type",
+                                                            className="btn-group d-flex flex-grow-1 justify-content-center",
+                                                            inputClassName="btn-check",
+                                                            labelClassName="btn btn-outline-secondary",
+                                                            labelCheckedClassName="active",
+                                                            options=[
+                                                                dict(
+                                                                    label="House",
+                                                                    value="House",
+                                                                ),
+                                                                dict(
+                                                                    label="Unit",
+                                                                    value="Unit",
+                                                                ),
+                                                            ],
+                                                            value="Unit",
+                                                        ),
+                                                    ],
+                                                ),
+                                            ]
                                         ),
                                         dcc.Graph(
                                             id="loc-map",
                                             figure=get_loc_map(
-                                                price_by_loc,
-                                                loc_bound_trimmed,
+                                                df_all_med,
+                                                json_bound_trim,
                                                 color_key="price",
                                             ),
                                         ),
@@ -143,7 +210,7 @@ app.layout = dbc.Container(
                 ),
             ],
             justify="between",
-            align="center",
+            align="top",
         )
     ],
     fluid=True,
@@ -156,7 +223,7 @@ def display_click_data(clickData):
     # show chart for the suburb clicked on map
     if clickData:
         loc = clickData.get("points")[0].get("location")
-        return get_trend_plot(dataset, loc)
+        return get_trend_plot(df_rec, loc)
     else:
         return {}
 
