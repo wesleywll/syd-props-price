@@ -44,7 +44,7 @@ df_all_med = (
 price_diff = df_all_med.groupby(["locality", "property_type"]).price.diff()
 year_diff = df_all_med.groupby(["locality", "property_type"]).year.diff()
 # extrapolate change rate in case of missing years
-df_all_med["rate"] = (price_diff / df_all_med.price) / year_diff
+df_all_med["rate"] = (price_diff / df_all_med.price.shift(1)) / year_diff
 
 # calculate distance from CBD
 df_sub["dist"] = df_sub.apply(
@@ -229,8 +229,6 @@ app.layout = dbc.Container(
 
 # ------------------
 # plot functions
-
-
 def get_loc_map(df, loc_bound, color_key, title=""):
     fig = px.choropleth_mapbox(
         df.reset_index(),
@@ -261,49 +259,7 @@ def get_loc_map(df, loc_bound, color_key, title=""):
 
 
 # ----------------------------
-# callbacks
-@app.callback(Output("locality", "data"), Input("fig_data_map", "clickData"))
-def map_clicked(clickData):
-    # data map clicked, update locality in store
-    if clickData:
-        loc = clickData.get("points")[0].get("location")
-    else:
-        loc = "SYDNEY"  # default locality
-    return dict(locality=loc)
-
-
-@app.callback(Output("fig_price_trend", "figure"), Input("locality", "data"))
-def plot_suburb_price_trend(data):
-    # locality changed, update plot
-    loc = data.get("locality")
-    df_plot = df_all_med.query(f'locality=="{loc}"')
-    fig = px.line(
-        df_plot,
-        x="year",
-        y="price",
-        color="property_type",
-        title=loc.title(),
-    )
-    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
-    return fig
-
-
-@app.callback(Output("fig_rate_trend", "figure"), Input("locality", "data"))
-def plot_suburb_rate_trend(data):
-    # locality changed, update plot
-    loc = data.get("locality")
-    df_plot = df_all_med.query(f'locality=="{loc}"')
-    fig = px.line(
-        df_plot,
-        x="year",
-        y="rate",
-        color="property_type",
-        title=loc.title(),
-    )
-    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
-    return fig
-
-
+# --- map callbacks
 @app.callback(
     [Output("map_collapse", "is_open"), Output("map_toggle_button", "children")],
     Input("map_toggle_button", "n_clicks"),
@@ -341,6 +297,49 @@ def change_data_map(datakey, prop_type, year=2021):
         return get_loc_map(
             df_sub, json_bound_trim, color_key=f"annual_rate_{prop_type}"
         )
+
+
+@app.callback(Output("locality", "data"), Input("fig_data_map", "clickData"))
+def map_clicked(clickData):
+    # data map clicked, update locality in store
+    if clickData:
+        loc = clickData.get("points")[0].get("location")
+    else:
+        loc = "SYDNEY"  # default locality
+    return dict(locality=loc)
+
+
+# --- plots callbacks
+@app.callback(Output("fig_price_trend", "figure"), Input("locality", "data"))
+def plot_suburb_price_trend(data):
+    # locality changed, update plot
+    loc = data.get("locality")
+    df_plot = df_all_med.query(f'locality=="{loc}"')
+    fig = px.line(
+        df_plot,
+        x="year",
+        y="price",
+        color="property_type",
+        title=loc.title(),
+    )
+    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+    return fig
+
+
+@app.callback(Output("fig_rate_trend", "figure"), Input("locality", "data"))
+def plot_suburb_rate_trend(data):
+    # locality changed, update plot
+    loc = data.get("locality")
+    df_plot = df_all_med.query(f'locality=="{loc}"')
+    fig = px.line(
+        df_plot,
+        x="year",
+        y="rate",
+        color="property_type",
+        title=loc.title(),
+    )
+    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+    return fig
 
 
 if __name__ == "__main__":
