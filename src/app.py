@@ -50,11 +50,6 @@ df_all_med["rate"] = (price_diff / df_all_med.price.shift(1)) / year_diff
 df_sub["dist"] = df_sub.apply(
     lambda row: dist(row["lat"], row["lon"], CBD_COORD[0], CBD_COORD[1]), axis=1
 )
-# get suburb list
-CBD_DIST = 60  # max suburb distance from CBD (km)
-suburbs = df_sub.query(f"dist <= {CBD_DIST}").locality.unique().tolist()
-# trim boundary data to reduce load time
-json_bound_trim = trim_geojson(geojson=json_bound, select=suburbs)
 
 # apply regression to find annual growth rate
 results = df_all_med.groupby(["locality", "property_type"]).apply(log_regress)
@@ -169,7 +164,45 @@ app.layout = dbc.Container(
                                                         "always_visible": True,
                                                     },
                                                     className="pt-5 ",
-                                                )
+                                                ),
+                                                dcc.RangeSlider(
+                                                    id="dist_slider",
+                                                    min=0,
+                                                    max=100,
+                                                    step=1,
+                                                    value=[0, 20],
+                                                    marks={
+                                                        d: f"{d} km"
+                                                        for d in [0, 20, 40, 70, 100]
+                                                    },
+                                                    tooltip={
+                                                        "placement": "top",
+                                                        # "always_visible": True,
+                                                    },
+                                                ),
+                                                dcc.RangeSlider(
+                                                    id="price_slider",
+                                                    min=0.1,
+                                                    max=3,
+                                                    step=0.1,
+                                                    value=[0.5, 2],
+                                                    marks={
+                                                        d: f"{d:.1f} M"
+                                                        for d in [
+                                                            0.1,
+                                                            0.5,
+                                                            1,
+                                                            1.5,
+                                                            2,
+                                                            2.5,
+                                                            3,
+                                                        ]
+                                                    },
+                                                    tooltip={
+                                                        "placement": "top",
+                                                        # "always_visible": True,
+                                                    },
+                                                ),
                                             ],
                                         ),
                                         dcc.Loading(
@@ -223,6 +256,7 @@ app.layout = dbc.Container(
         dcc.Store(id="year"),
         dcc.Store(id="prop_type"),
         dcc.Store(id="data_type"),
+        dcc.Store(id="geojson"),
     ],
 )
 
@@ -274,29 +308,51 @@ def toggle_map_collapse(n_clicks, is_open):
     return is_open, txt
 
 
+# filter suburbs shown on map
+@app.callback(
+    Output("geojson", "data"),
+    [
+        Input("dist_slider", "value"),
+    ],
+)
+def suburb_filter_changed(dist_range):
+    # get suburb list
+    dist_min, dist_max = dist_range
+    suburbs = (
+        df_sub.query(f"{dist_min} <= dist <= {dist_max}").locality.unique().tolist()
+    )
+    # trim boundary data to reduce load time
+    json_bound_trim = trim_geojson(geojson=json_bound, select=suburbs)
+    return json_bound_trim
+
+
+# change map
 @app.callback(
     Output("fig_data_map", "figure"),
     [
         Input("map_option_radio_datakey", "value"),
         Input("map_option_radio_prop_type", "value"),
         Input("year_slider", "value"),
+        Input("price_slider", "value"),
+        Input("geojson", "data"),
     ],
 )
-def change_data_map(datakey, prop_type, year=2021):
+def change_data_map(datakey, prop_type, year, price_range, geojson):
     if datakey == "price":
+        price_min = price_range[0] * 1e6
+        price_max = price_range[1] * 1e6
+
         df = pd.merge(
             df_sub,
-            df_all_med.query(f"property_type=='{prop_type}' & year=={year}")[
-                ["locality", "price"]
-            ],
+            df_all_med.query(
+                f"property_type=='{prop_type}' & year=={year} & {price_min}<= price <= {price_max}"
+            )[["locality", "price"]],
             on="locality",
             how="left",
         )
-        return get_loc_map(df, json_bound_trim, color_key=datakey)
+        return get_loc_map(df, geojson, color_key=datakey)
     elif datakey == "rate":
-        return get_loc_map(
-            df_sub, json_bound_trim, color_key=f"annual_rate_{prop_type}"
-        )
+        return get_loc_map(df_sub, geojson, color_key=f"annual_rate_{prop_type}")
 
 
 @app.callback(Output("locality", "data"), Input("fig_data_map", "clickData"))
@@ -323,6 +379,8 @@ def plot_suburb_price_trend(data):
         title=loc.title(),
     )
     fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+    fig.update_layout(xaxis=dict(fixedrange=True))
+    fig.update_layout(yaxis=dict(fixedrange=True))
     return fig
 
 
@@ -339,6 +397,8 @@ def plot_suburb_rate_trend(data):
         title=loc.title(),
     )
     fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+    fig.update_layout(xaxis=dict(fixedrange=True))
+    fig.update_layout(yaxis=dict(fixedrange=True))
     return fig
 
 
