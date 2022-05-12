@@ -2,6 +2,8 @@ from dash import Dash, html, dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import plotly.express as px
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import json
@@ -10,6 +12,11 @@ import os
 from plotly.tools import mpl_to_plotly
 from src.paths import DATA_DIR, LOC_BOUND_PATH, SUBURB_COORD_PATH
 from src.func import log_regress, dist, million, percent
+
+PRIMARY_COLOR = "#3891ff"
+SECONDARY_COLOR = "#b0bfec"
+PROP_COLOR = dict(House=SECONDARY_COLOR, Unit=PRIMARY_COLOR)
+PLOT_BG_COLOR = "#eeeeee"
 
 
 def trim_geojson(geojson, select: list):
@@ -252,7 +259,8 @@ app.layout = dbc.Container(
                     dbc.Card(
                         [
                             dbc.CardBody(
-                                [
+                                className="no-gutters",
+                                children=[
                                     dbc.Row(
                                         children=[
                                             html.P("Number of bedrooms"),
@@ -292,7 +300,7 @@ app.layout = dbc.Container(
                                             ),
                                         ]
                                     ),
-                                ]
+                                ],
                             )
                         ]
                     )
@@ -427,16 +435,62 @@ def plot_suburb_price_trend(data, bed_range):
     # locality changed, update plot
     loc = data.get("locality")
     df_plot = get_filtered_sub_med(df_rec, loc=loc, bed_range=bed_range)
-    fig = px.line(
-        df_plot,
-        x="year",
-        y="price",
-        color="property_type",
-        title=loc.title(),
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        vertical_spacing=0.02,
+        shared_xaxes=True,
     )
+
+    for prop in df_plot.property_type.unique():
+        df = df_plot[df_plot.property_type == prop]
+        # price trend
+        fig.add_trace(
+            go.Scatter(
+                x=df.year,
+                y=df.price,
+                name=prop,
+                mode="lines+markers",
+                marker_color=PROP_COLOR[prop],
+            ),
+            row=1,
+            col=1,
+        )
+        # rate trend
+        fig.add_trace(
+            go.Bar(
+                x=df.year,
+                y=df.rate,
+                name=prop,
+                marker_color=PROP_COLOR[prop],
+                showlegend=False,
+            ),
+            row=2,
+            col=1,
+        )
+
     fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
-    fig.update_layout(xaxis=dict(fixedrange=True))
-    fig.update_layout(yaxis=dict(fixedrange=True))
+    fig.update_layout(plot_bgcolor=PLOT_BG_COLOR)
+    fig.update_layout(title=loc.title())
+    # control subplot proportion
+    rate_height = 0.25
+    gap = 0.02
+    fig.update_layout(
+        yaxis=dict(domain=[rate_height + gap, 1]),
+        yaxis2=dict(domain=[0, rate_height]),
+    )
+    fig.update_xaxes(fixedrange=True)
+    fig.update_yaxes(fixedrange=True)
+    fig.update_yaxes(title_text='Median price', row=1, col=1)
+    fig.update_yaxes(title_text='Changes', row=2, col=1, tickformat='.0%')
+    fig.update_layout(
+        margin=dict(
+            t=30,
+            r=0,
+            b=0,
+            l=0,
+        ),
+    )
     return fig
 
 
@@ -451,12 +505,13 @@ def plot_suburb_rate_trend(data, bed_range):
     # locality changed, update plot
     loc = data.get("locality")
     df_plot = get_filtered_sub_med(df_rec, loc=loc, bed_range=bed_range)
-    fig = px.line(
+    fig = px.bar(
         df_plot,
         x="year",
         y="rate",
         color="property_type",
         title=loc.title(),
+        barmode="group",
     )
     fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
     fig.update_layout(xaxis=dict(fixedrange=True))
