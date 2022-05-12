@@ -195,14 +195,13 @@ app.layout = dbc.Container(
                                                     min=0,
                                                     max=100,
                                                     step=1,
-                                                    value=[0, 20],
+                                                    value=[0, 10],
                                                     marks={
                                                         d: f"{d} km"
                                                         for d in [0, 20, 40, 70, 100]
                                                     },
                                                     tooltip={
                                                         "placement": "top",
-                                                        # "always_visible": True,
                                                     },
                                                 ),
                                                 dcc.RangeSlider(
@@ -225,7 +224,6 @@ app.layout = dbc.Container(
                                                     },
                                                     tooltip={
                                                         "placement": "top",
-                                                        # "always_visible": True,
                                                     },
                                                 ),
                                             ],
@@ -250,29 +248,54 @@ app.layout = dbc.Container(
             justify="center",
             align="top",
             children=[
-                dbc.Col(
-                    children=[
-                        dcc.Loading(
-                            dbc.Card([dbc.CardBody(dcc.Graph(id="fig_price_trend"))])
-                        ),
-                    ],
-                    xs=12,
-                    sm=12,
-                    md=12,
-                    lg=6,
-                    xl=6,
-                ),
-                dbc.Col(
-                    children=[
-                        dcc.Loading(
-                            dbc.Card([dbc.CardBody(dcc.Graph(id="fig_rate_trend"))])
-                        ),
-                    ],
-                    xs=12,
-                    sm=12,
-                    md=12,
-                    lg=6,
-                    xl=6,
+                dcc.Loading(
+                    dbc.Card(
+                        [
+                            dbc.CardBody(
+                                [
+                                    dbc.Row(
+                                        children=[
+                                            html.P("Number of bedrooms"),
+                                            dcc.RangeSlider(
+                                                id="bed_slider",
+                                                min=0,
+                                                max=3,
+                                                step=1,
+                                                value=[1, 3],
+                                                tooltip={
+                                                    "placement": "top",
+                                                },
+                                            ),
+                                        ]
+                                    ),
+                                    dbc.Row(
+                                        children=[
+                                            dbc.Col(
+                                                children=[
+                                                    dcc.Graph(id="fig_price_trend"),
+                                                ],
+                                                xs=12,
+                                                sm=12,
+                                                md=12,
+                                                lg=6,
+                                                xl=6,
+                                            ),
+                                            dbc.Col(
+                                                children=[
+                                                    dcc.Graph(id="fig_rate_trend"),
+                                                ],
+                                                xs=12,
+                                                sm=12,
+                                                md=12,
+                                                lg=6,
+                                                xl=6,
+                                            ),
+                                        ]
+                                    ),
+                                ]
+                            )
+                        ]
+                    )
                 ),
             ],
         ),
@@ -393,11 +416,17 @@ def map_clicked(clickData):
 
 
 # --- plots callbacks
-@app.callback(Output("fig_price_trend", "figure"), Input("locality", "data"))
-def plot_suburb_price_trend(data):
+@app.callback(
+    Output("fig_price_trend", "figure"),
+    [
+        Input("locality", "data"),
+        Input("bed_slider", "value"),
+    ],
+)
+def plot_suburb_price_trend(data, bed_range):
     # locality changed, update plot
     loc = data.get("locality")
-    df_plot = df_med_trend.query(f'locality=="{loc}"')
+    df_plot = get_filtered_sub_med(df_rec, loc=loc, bed_range=bed_range)
     fig = px.line(
         df_plot,
         x="year",
@@ -411,11 +440,17 @@ def plot_suburb_price_trend(data):
     return fig
 
 
-@app.callback(Output("fig_rate_trend", "figure"), Input("locality", "data"))
-def plot_suburb_rate_trend(data):
+@app.callback(
+    Output("fig_rate_trend", "figure"),
+    [
+        Input("locality", "data"),
+        Input("bed_slider", "value"),
+    ],
+)
+def plot_suburb_rate_trend(data, bed_range):
     # locality changed, update plot
     loc = data.get("locality")
-    df_plot = df_med_trend.query(f'locality=="{loc}"')
+    df_plot = get_filtered_sub_med(df_rec, loc=loc, bed_range=bed_range)
     fig = px.line(
         df_plot,
         x="year",
