@@ -186,10 +186,13 @@ app.layout = dbc.Container(
                                                     step=1,
                                                     value=2021,
                                                     marks={
-                                                        2000: dict(label="2000"),
-                                                        2008: dict(label="2008"),
-                                                        2019: dict(label="2019"),
-                                                        2021: dict(label="2021"),
+                                                        y: str(y)
+                                                        for y in [
+                                                            2000,
+                                                            2008,
+                                                            2019,
+                                                            2021,
+                                                        ]
                                                     },
                                                     tooltip={
                                                         "placement": "top",
@@ -255,55 +258,112 @@ app.layout = dbc.Container(
             justify="center",
             align="top",
             children=[
-                dcc.Loading(
-                    dbc.Card(
-                        [
-                            dbc.CardBody(
-                                className="no-gutters",
-                                children=[
-                                    dbc.Row(
+                dbc.Col(
+                    xs=12,
+                    sm=12,
+                    md=12,
+                    lg=6,
+                    xl=6,
+                    children=[
+                        dcc.Loading(
+                            dbc.Card(
+                                [
+                                    dbc.CardBody(
                                         children=[
-                                            html.P("Number of bedrooms"),
-                                            dcc.RangeSlider(
-                                                id="bed_slider",
-                                                min=0,
-                                                max=3,
-                                                step=1,
-                                                value=[1, 3],
-                                                tooltip={
-                                                    "placement": "top",
-                                                },
-                                            ),
-                                        ]
-                                    ),
-                                    dbc.Row(
-                                        children=[
-                                            dbc.Col(
+                                            dbc.Row(
                                                 children=[
-                                                    dcc.Graph(id="fig_price_trend"),
-                                                ],
-                                                xs=12,
-                                                sm=12,
-                                                md=12,
-                                                lg=6,
-                                                xl=6,
+                                                    html.P("Bedrooms"),
+                                                    dcc.RangeSlider(
+                                                        id="bed_slider",
+                                                        min=0,
+                                                        max=3,
+                                                        step=1,
+                                                        value=[1, 3],
+                                                        tooltip={
+                                                            "placement": "top",
+                                                        },
+                                                    ),
+                                                ]
                                             ),
-                                            dbc.Col(
+                                            dbc.Row(
                                                 children=[
-                                                    dcc.Graph(id="fig_rate_trend"),
-                                                ],
-                                                xs=12,
-                                                sm=12,
-                                                md=12,
-                                                lg=6,
-                                                xl=6,
+                                                    dcc.Graph(id="fig_sub_trend"),
+                                                ]
                                             ),
-                                        ]
-                                    ),
-                                ],
+                                        ],
+                                    )
+                                ]
                             )
-                        ]
-                    )
+                        ),
+                    ],
+                ),
+                dbc.Col(
+                    xs=12,
+                    sm=12,
+                    md=12,
+                    lg=6,
+                    xl=6,
+                    children=[
+                        dcc.Loading(
+                            dbc.Card(
+                                [
+                                    dbc.CardBody(
+                                        children=[
+                                            dbc.Row(
+                                                justify="center",
+                                                align="bottom",
+                                                children=[
+                                                    dbc.Col(
+                                                        width=6,
+                                                        children=[
+                                                            html.P(
+                                                                "Bedrooms"
+                                                            ),
+                                                            dcc.RangeSlider(
+                                                                id="dist_bed_slider",
+                                                                min=0,
+                                                                max=3,
+                                                                step=1,
+                                                                value=[1, 3],
+                                                                tooltip={
+                                                                    "placement": "top",
+                                                                },
+                                                            ),
+                                                        ],
+                                                    ),
+                                                    dbc.Col(
+                                                        width=6,
+                                                        children=[
+                                                            html.P("Year"),
+                                                            dcc.Slider(
+                                                                id="dist_year_slider",
+                                                                min=2000,
+                                                                max=2021,
+                                                                step=1,
+                                                                value=2021,
+                                                                marks={
+                                                                    y: str(y)
+                                                                    for y in [
+                                                                        2000,
+                                                                        2021,
+                                                                    ]
+                                                                },
+                                                                tooltip={
+                                                                    "placement": "bottom",
+                                                                    "always_visible": True,
+                                                                },
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ],
+                                            ),
+                                            dbc.Row([dcc.Graph(id="fig_sub_dist")]),
+                                        ]
+                                    )
+                                ]
+                            )
+                        )
+                    ],
                 ),
             ],
         ),
@@ -425,13 +485,13 @@ def map_clicked(clickData):
 
 # --- plots callbacks
 @app.callback(
-    Output("fig_price_trend", "figure"),
+    Output("fig_sub_trend", "figure"),
     [
         Input("locality", "data"),
         Input("bed_slider", "value"),
     ],
 )
-def plot_suburb_price_trend(data, bed_range):
+def plot_suburb_trend(data, bed_range):
     # locality changed, update plot
     loc = data.get("locality")
     df_plot = get_filtered_sub_med(df_rec, loc=loc, bed_range=bed_range)
@@ -481,8 +541,8 @@ def plot_suburb_price_trend(data, bed_range):
     )
     fig.update_xaxes(fixedrange=True)
     fig.update_yaxes(fixedrange=True)
-    fig.update_yaxes(title_text='Median price', row=1, col=1)
-    fig.update_yaxes(title_text='Changes', row=2, col=1, tickformat='.0%')
+    fig.update_yaxes(title_text="Median price", row=1, col=1)
+    fig.update_yaxes(title_text="Changes", row=2, col=1, tickformat=".0%")
     fig.update_layout(
         margin=dict(
             t=30,
@@ -495,27 +555,59 @@ def plot_suburb_price_trend(data, bed_range):
 
 
 @app.callback(
-    Output("fig_rate_trend", "figure"),
+    Output("fig_sub_dist", "figure"),
     [
         Input("locality", "data"),
-        Input("bed_slider", "value"),
+        Input("dist_bed_slider", "value"),
+        Input("dist_year_slider", "value"),
     ],
 )
-def plot_suburb_rate_trend(data, bed_range):
+def plot_suburb_dist(data, bed_range, year):
     # locality changed, update plot
     loc = data.get("locality")
-    df_plot = get_filtered_sub_med(df_rec, loc=loc, bed_range=bed_range)
-    fig = px.bar(
-        df_plot,
-        x="year",
-        y="rate",
-        color="property_type",
-        title=loc.title(),
-        barmode="group",
+    bmin, bmax = bed_range
+    df_plot = df_rec.query(f"year=={year} & {bmin} <= bedrooms <= {bmax}")
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        vertical_spacing=0.02,
+        shared_xaxes=True,
     )
+
+    for i, prop in enumerate(df_plot.property_type.unique()):
+        df = df_plot[df_plot.property_type == prop]
+        # price trend
+        fig.add_trace(
+            go.Histogram(
+                x=df.price,
+                name=prop,
+                marker_color=PROP_COLOR[prop],
+            ),
+            row=i + 1,
+            col=1,
+        )
+
     fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
-    fig.update_layout(xaxis=dict(fixedrange=True))
-    fig.update_layout(yaxis=dict(fixedrange=True))
+    fig.update_layout(plot_bgcolor=PLOT_BG_COLOR)
+    fig.update_layout(title=loc.title())
+    # control subplot proportion
+    rate_height = 0.5
+    gap = 0
+    fig.update_layout(
+        yaxis=dict(domain=[rate_height + gap, 1]),
+        yaxis2=dict(domain=[0, rate_height]),
+    )
+    fig.update_xaxes(fixedrange=True)
+    fig.update_xaxes(title_text="Price", row=2, col=1)
+    fig.update_yaxes(fixedrange=True)
+    fig.update_layout(
+        margin=dict(
+            t=30,
+            r=0,
+            b=0,
+            l=0,
+        ),
+    )
     return fig
 
 
