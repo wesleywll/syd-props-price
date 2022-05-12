@@ -239,7 +239,10 @@ app.layout = dbc.Container(
                                             ],
                                         ),
                                         dcc.Loading(
-                                            dcc.Graph(id="fig_data_map"),
+                                            dcc.Graph(
+                                                id="fig_data_map",
+                                                config=dict(displayModeBar=False),
+                                            ),
                                         ),
                                     ],
                                 ),
@@ -276,7 +279,7 @@ app.layout = dbc.Container(
                                                     dcc.RangeSlider(
                                                         id="bed_slider",
                                                         min=0,
-                                                        max=3,
+                                                        max=5,
                                                         step=1,
                                                         value=[1, 3],
                                                         tooltip={
@@ -287,7 +290,12 @@ app.layout = dbc.Container(
                                             ),
                                             dbc.Row(
                                                 children=[
-                                                    dcc.Graph(id="fig_sub_trend"),
+                                                    dcc.Graph(
+                                                        id="fig_sub_trend",
+                                                        config=dict(
+                                                            displayModeBar=False
+                                                        ),
+                                                    ),
                                                 ]
                                             ),
                                         ],
@@ -316,13 +324,11 @@ app.layout = dbc.Container(
                                                     dbc.Col(
                                                         width=6,
                                                         children=[
-                                                            html.P(
-                                                                "Bedrooms"
-                                                            ),
+                                                            html.P("Bedrooms"),
                                                             dcc.RangeSlider(
                                                                 id="dist_bed_slider",
                                                                 min=0,
-                                                                max=3,
+                                                                max=5,
                                                                 step=1,
                                                                 value=[1, 3],
                                                                 tooltip={
@@ -357,7 +363,16 @@ app.layout = dbc.Container(
                                                     ),
                                                 ],
                                             ),
-                                            dbc.Row([dcc.Graph(id="fig_sub_dist")]),
+                                            dbc.Row(
+                                                [
+                                                    dcc.Graph(
+                                                        id="fig_sub_dist",
+                                                        config=dict(
+                                                            displayModeBar=False
+                                                        ),
+                                                    )
+                                                ]
+                                            ),
                                         ]
                                     )
                                 ]
@@ -531,7 +546,7 @@ def plot_suburb_trend(data, bed_range):
 
     fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
     fig.update_layout(plot_bgcolor=PLOT_BG_COLOR)
-    fig.update_layout(title=loc.title())
+    fig.update_layout(title=f"{loc.title()} price trend")
     # control subplot proportion
     rate_height = 0.25
     gap = 0.02
@@ -587,9 +602,9 @@ def plot_suburb_dist(data, bed_range, year):
             col=1,
         )
 
-    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99))
     fig.update_layout(plot_bgcolor=PLOT_BG_COLOR)
-    fig.update_layout(title=loc.title())
+    fig.update_layout(title=f"{loc.title()} {year} price distribution")
     # control subplot proportion
     rate_height = 0.5
     gap = 0
@@ -599,7 +614,7 @@ def plot_suburb_dist(data, bed_range, year):
     )
     fig.update_xaxes(fixedrange=True)
     fig.update_xaxes(title_text="Price", row=2, col=1)
-    fig.update_yaxes(fixedrange=True)
+    fig.update_yaxes(fixedrange=True, visible=False)
     fig.update_layout(
         margin=dict(
             t=30,
