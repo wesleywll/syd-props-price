@@ -27,42 +27,67 @@ def trim_geojson(geojson, select: list):
 # -- import data
 df_rec = pd.read_csv(os.path.join(DATA_DIR, "dataset.csv"))  # cleaned sales records
 json_bound = json.load(open(LOC_BOUND_PATH, "r"))  # locality boundaries geojson
-df_sub = pd.read_csv(
-    os.path.join(AUS_PATH, "nsw_suburb_coord.csv")
-)  # coordinates of suburbs
-CBD_COORD = (-33.8708, 151.2073)  # coordinates of Sydney CBD
+# coordinates of suburbs
+df_sub_coords = pd.read_csv(os.path.join(AUS_PATH, "nsw_suburb_coord.csv"))
+# coordinates of Sydney CBD
+CBD_COORD = (-33.8708, 151.2073)
 
 # -- data processing
+def get_filtered_sub_med(
+    df_in: pd.DataFrame,
+    loc: str = None,
+    price_range: list = None,
+    bed_range: list = None,
+):
+    # filter data
+    df = df_in.copy()
+    if loc:
+        df = df[df.locality == loc]
+    if price_range:
+        p_range = [p * 1e6 for p in price_range]  # convert million to exact numbers
+        df = df[df.price.isin(p_range)]
+    if bed_range:
+        df = df[df.bedrooms.isin(bed_range)]
+    df = (
+        df.groupby(["locality", "property_type", "year"])
+        .median()
+        .reset_index()
+        .sort_values(by=["locality", "property_type", "year"])
+    )
+    # calculate change rate
+    price_diff = df.groupby(["locality", "property_type"]).price.diff()
+    year_diff = df.groupby(["locality", "property_type"]).year.diff()
+    # extrapolate change rate in case of missing years
+    df["rate"] = (price_diff / df.price.shift(1)) / year_diff
+    return df
+
+
+def get_sub_summary(df_sub_coords: pd.DataFrame, df_med_trend: pd.DataFrame):
+    # filter data
+    df = df_sub_coords.copy()
+    # calculate distance from CBD
+    df["dist"] = df.apply(
+        lambda row: dist(row["lat"], row["lon"], CBD_COORD[0], CBD_COORD[1]), axis=1
+    )
+
+    # apply regression to find annual growth rate
+    results = df_med_trend.groupby(["locality", "property_type"]).apply(log_regress)
+    results["annual_rate"] = np.exp(results.slope) - 1
+    results = results.unstack()
+    results.columns = ["_".join(col_pair) for col_pair in results.columns]
+    results.reset_index(inplace=True)
+    # merge results into suburb data
+    df = pd.merge(df, results, on="locality", how="left")
+    return df
+
+
 # annual median price of all suburbs
-df_all_med = (
-    df_rec.groupby(["locality", "property_type", "year"])
-    .median()
-    .reset_index()
-    .sort_values(by=["locality", "property_type", "year"])
-)
-# calculate price and year difference between consecutive rows
-price_diff = df_all_med.groupby(["locality", "property_type"]).price.diff()
-year_diff = df_all_med.groupby(["locality", "property_type"]).year.diff()
-# extrapolate change rate in case of missing years
-df_all_med["rate"] = (price_diff / df_all_med.price.shift(1)) / year_diff
-
-# calculate distance from CBD
-df_sub["dist"] = df_sub.apply(
-    lambda row: dist(row["lat"], row["lon"], CBD_COORD[0], CBD_COORD[1]), axis=1
-)
-
-# apply regression to find annual growth rate
-results = df_all_med.groupby(["locality", "property_type"]).apply(log_regress)
-results["annual_rate"] = np.exp(results.slope) - 1
-results = results.unstack()
-results.columns = ["_".join(col_pair) for col_pair in results.columns]
-results.reset_index(inplace=True)
-# merge results into suburb data
-df_sub = pd.merge(df_sub, results, on="locality", how="left")
+df_med_trend = get_filtered_sub_med(df_rec)
+df_sub_smry = get_sub_summary(df_sub_coords, df_med_trend)
 
 # -- Summary --
-# df_all_med: contains medians of all suburbs, grouped by locality, property_type and year
-# df_sub: contains details of suburbs, including coordinates, CBD distance and regression results
+# df_med_trend: contains median trends of all suburbs, grouped by locality, property_type and year
+# df_sub_smry: contains summary details of suburbs, including coordinates, CBD distance and regression results
 
 # ----------------------------------
 # rendering
@@ -319,7 +344,9 @@ def suburb_filter_changed(dist_range):
     # get suburb list
     dist_min, dist_max = dist_range
     suburbs = (
-        df_sub.query(f"{dist_min} <= dist <= {dist_max}").locality.unique().tolist()
+        df_sub_smry.query(f"{dist_min} <= dist <= {dist_max}")
+        .locality.unique()
+        .tolist()
     )
     # trim boundary data to reduce load time
     json_bound_trim = trim_geojson(geojson=json_bound, select=suburbs)
@@ -343,8 +370,8 @@ def change_data_map(datakey, prop_type, year, price_range, geojson):
         price_max = price_range[1] * 1e6
 
         df = pd.merge(
-            df_sub,
-            df_all_med.query(
+            df_sub_smry,
+            df_med_trend.query(
                 f"property_type=='{prop_type}' & year=={year} & {price_min}<= price <= {price_max}"
             )[["locality", "price"]],
             on="locality",
@@ -352,7 +379,7 @@ def change_data_map(datakey, prop_type, year, price_range, geojson):
         )
         return get_loc_map(df, geojson, color_key=datakey)
     elif datakey == "rate":
-        return get_loc_map(df_sub, geojson, color_key=f"annual_rate_{prop_type}")
+        return get_loc_map(df_sub_smry, geojson, color_key=f"annual_rate_{prop_type}")
 
 
 @app.callback(Output("locality", "data"), Input("fig_data_map", "clickData"))
@@ -370,7 +397,7 @@ def map_clicked(clickData):
 def plot_suburb_price_trend(data):
     # locality changed, update plot
     loc = data.get("locality")
-    df_plot = df_all_med.query(f'locality=="{loc}"')
+    df_plot = df_med_trend.query(f'locality=="{loc}"')
     fig = px.line(
         df_plot,
         x="year",
@@ -388,7 +415,7 @@ def plot_suburb_price_trend(data):
 def plot_suburb_rate_trend(data):
     # locality changed, update plot
     loc = data.get("locality")
-    df_plot = df_all_med.query(f'locality=="{loc}"')
+    df_plot = df_med_trend.query(f'locality=="{loc}"')
     fig = px.line(
         df_plot,
         x="year",
