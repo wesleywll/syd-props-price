@@ -581,7 +581,7 @@ def plot_suburb_dist(data, bed_range, year):
     # locality changed, update plot
     loc = data.get("locality")
     bmin, bmax = bed_range
-    df_plot = df_rec.query(f"year=={year} & {bmin} <= bedrooms <= {bmax}")
+    df_plot = df_rec.query(f"locality=='{loc}' & year=={year} & {bmin} <= bedrooms <= {bmax}")
     fig = make_subplots(
         rows=2,
         cols=1,
