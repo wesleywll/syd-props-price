@@ -14661,11 +14661,14 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">sql</span><span class="w"></span>
+
 <span class="k">SELECT</span><span class="w"></span>
 <span class="w">    </span><span class="n">property_type</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">propertyType</span><span class="p">,</span><span class="w"></span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="n">property_type</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="n">PRINTF</span><span class="p">(</span><span class="ss">&quot;%.1f%&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="mi">100</span><span class="o">*</span><span class="k">CAST</span><span class="p">(</span><span class="k">COUNT</span><span class="p">(</span><span class="n">property_type</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">real</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="c1">-- format function of SQLite</span>
+<span class="w">    </span><span class="n">PRINTF</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="ss">&quot;%.1f%&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="mi">100</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">CAST</span><span class="p">(</span><span class="k">COUNT</span><span class="p">(</span><span class="n">property_type</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">real</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"></span>
 <span class="w">                </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"></span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"></span>
@@ -14699,7 +14702,8 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Done.
+<pre> * sqlite:///D:\_CORE\static\dataset\Australia\pricefinder\pricefinder_db.sqlite
+Done.
 </pre>
 </div>
 </div>
@@ -14764,17 +14768,6 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
-<div class="jp-Cell-inputWrapper">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <h4 id="How-much-have-average-house-prices-changes-in-the-last-5-years?">How much have average house prices changes in the last 5 years?<a class="anchor-link" href="#How-much-have-average-house-prices-changes-in-the-last-5-years?">&#182;</a></h4>
 </div>
 </div>
@@ -14788,6 +14781,8 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">sql</span><span class="w"></span>
+
+<span class="c1">-- window for average house prices</span>
 <span class="k">WITH</span><span class="w"> </span><span class="n">houseAvg</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
 <span class="w">    </span><span class="k">SELECT</span><span class="w"></span>
 <span class="w">        </span><span class="k">CAST</span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">record_date</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">decimal</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">year</span><span class="p">,</span><span class="w"></span>
@@ -14796,15 +14791,24 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <span class="w">        </span><span class="n">record</span><span class="w"></span>
 <span class="w">    </span><span class="k">WHERE</span><span class="w"></span>
 <span class="w">        </span><span class="n">property_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;House&#39;</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="c1">-- only include sales price in reasonable range</span>
+<span class="w">        </span><span class="n">price</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">100000</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="mi">3000000</span><span class="w"></span>
 <span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
 <span class="w">        </span><span class="k">year</span><span class="w"></span>
 <span class="p">)</span><span class="w"></span>
 <span class="k">SELECT</span><span class="w"></span>
 <span class="w">    </span><span class="k">year</span><span class="p">,</span><span class="w"></span>
 <span class="w">    </span><span class="n">PRINTF</span><span class="p">(</span><span class="ss">&quot;$%,d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">avgPrice</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="n">PRINTF</span><span class="p">(</span><span class="ss">&quot;%.1f%&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="mi">100</span><span class="o">*</span><span class="p">(</span><span class="n">price</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">over</span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">year</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">changeFromPreviousYear</span><span class="w"></span>
+<span class="w">    </span><span class="n">PRINTF</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="ss">&quot;%.1f%&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="mi">100</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="n">price</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">over</span><span class="p">(</span><span class="w"></span>
+<span class="w">                </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
+<span class="w">                    </span><span class="k">year</span><span class="w"></span>
+<span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"></span>
+<span class="w">        </span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">growth</span><span class="w"></span>
 <span class="k">FROM</span><span class="w"></span>
 <span class="w">    </span><span class="n">houseAvg</span><span class="w"></span>
 <span class="k">WHERE</span><span class="w"></span>
@@ -14852,32 +14856,32 @@ Done.
     <tr>
         <th>year</th>
         <th>avgPrice</th>
-        <th>changeFromPreviousYear</th>
+        <th>growth</th>
     </tr>
     <tr>
         <td>2021</td>
-        <td>$1,649,125</td>
-        <td>35.2%</td>
+        <td>$1,431,570</td>
+        <td>20.0%</td>
     </tr>
     <tr>
         <td>2020</td>
-        <td>$1,220,014</td>
-        <td>23.5%</td>
+        <td>$1,193,125</td>
+        <td>5.5%</td>
     </tr>
     <tr>
         <td>2019</td>
-        <td>$987,961</td>
-        <td>-1.2%</td>
+        <td>$1,131,452</td>
+        <td>-2.1%</td>
     </tr>
     <tr>
         <td>2018</td>
-        <td>$999,697</td>
-        <td>-5.9%</td>
+        <td>$1,155,428</td>
+        <td>-3.6%</td>
     </tr>
     <tr>
         <td>2017</td>
-        <td>$1,062,668</td>
-        <td>10.8%</td>
+        <td>$1,199,063</td>
+        <td>8.1%</td>
     </tr>
 </table>
 </div>
@@ -14888,6 +14892,17 @@ Done.
 
 </div>
 
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h4 id="Which-suburbs-have-the-highest-growth-rate-in-house-prices-in-2021?">Which suburbs have the highest growth rate in house prices in 2021?<a class="anchor-link" href="#Which-suburbs-have-the-highest-growth-rate-in-house-prices-in-2021?">&#182;</a></h4>
+</div>
+</div>
+</div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <div class="jp-Cell-inputWrapper">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
@@ -14897,6 +14912,46 @@ Done.
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">sql</span><span class="w"></span>
+
+<span class="k">WITH</span><span class="w"> </span><span class="n">houseAvg</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"></span>
+<span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">locality</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">suburb</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="k">CAST</span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">record_date</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">decimal</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">year</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="k">AVG</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">price</span><span class="w"></span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"></span>
+<span class="w">        </span><span class="n">record</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">r</span><span class="w"></span>
+<span class="w">        </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">property</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">prop_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">address</span><span class="w"></span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"></span>
+<span class="w">        </span><span class="n">r</span><span class="p">.</span><span class="n">property_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;House&#39;</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">price</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">100000</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="mi">3000000</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="c1">-- include 2020 and 2021 prices to calculate growth in 2021</span>
+<span class="w">        </span><span class="k">year</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">2020</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="mi">2021</span><span class="w"></span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
+<span class="w">        </span><span class="n">suburb</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="k">year</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+<span class="k">SELECT</span><span class="w"></span>
+<span class="w">    </span><span class="n">suburb</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="k">year</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">PRINTF</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="s1">&#39;%.1f%&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="c1">-- growth rate = (this-year-price / prev-year-price) -1</span>
+<span class="w">        </span><span class="mi">100</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="n">price</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="p">(</span><span class="w"></span>
+<span class="w">                </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">suburb</span><span class="w"></span>
+<span class="w">                </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
+<span class="w">                    </span><span class="k">year</span><span class="w"></span>
+<span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"></span>
+<span class="w">        </span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">growth</span><span class="w"></span>
+<span class="k">FROM</span><span class="w"></span>
+<span class="w">    </span><span class="n">houseAvg</span><span class="w"></span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
+<span class="w">    </span><span class="n">growth</span><span class="w"> </span><span class="k">DESC</span><span class="w"></span>
+<span class="k">LIMIT</span><span class="w"></span>
+<span class="w">    </span><span class="mi">10</span><span class="w"></span>
 </pre></div>
 
      </div>
@@ -14917,10 +14972,503 @@ Done.
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
 
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>UsageError: %%sql is a cell magic, but the cell body is empty. Did you mean the line magic %sql (single %)?
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre> * sqlite:///D:\_CORE\static\dataset\Australia\pricefinder\pricefinder_db.sqlite
+Done.
 </pre>
 </div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[&nbsp;]:</div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<table>
+    <tr>
+        <th>suburb</th>
+        <th>year</th>
+        <th>growth</th>
+    </tr>
+    <tr>
+        <td>MAIANBAR</td>
+        <td>2021</td>
+        <td>98.9%</td>
+    </tr>
+    <tr>
+        <td>MILSONS PASSAGE</td>
+        <td>2021</td>
+        <td>90.4%</td>
+    </tr>
+    <tr>
+        <td>COLLAROY</td>
+        <td>2021</td>
+        <td>9.6%</td>
+    </tr>
+    <tr>
+        <td>RANKIN PARK</td>
+        <td>2021</td>
+        <td>9.6%</td>
+    </tr>
+    <tr>
+        <td>PENDLE HILL</td>
+        <td>2021</td>
+        <td>9.5%</td>
+    </tr>
+    <tr>
+        <td>HUNTERS HILL</td>
+        <td>2021</td>
+        <td>9.4%</td>
+    </tr>
+    <tr>
+        <td>THE ENTRANCE NORTH</td>
+        <td>2021</td>
+        <td>9.4%</td>
+    </tr>
+    <tr>
+        <td>WOOLLAHRA</td>
+        <td>2021</td>
+        <td>9.3%</td>
+    </tr>
+    <tr>
+        <td>SEAFORTH</td>
+        <td>2021</td>
+        <td>9.2%</td>
+    </tr>
+    <tr>
+        <td>BEACONSFIELD</td>
+        <td>2021</td>
+        <td>9.1%</td>
+    </tr>
+</table>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h4 id="What-is-5-year-moving-avearge-house-price-for-suburb-Chatswood?">What is 5-year moving avearge house price for suburb Chatswood?<a class="anchor-link" href="#What-is-5-year-moving-avearge-house-price-for-suburb-Chatswood?">&#182;</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">sql</span><span class="w"></span>
+
+<span class="k">WITH</span><span class="w"> </span><span class="n">houseAvg</span><span class="w"> </span><span class="k">AS</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"></span>
+<span class="w">        </span><span class="k">CAST</span><span class="p">(</span><span class="n">STRFTIME</span><span class="p">(</span><span class="s1">&#39;%Y&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">record_date</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">integer</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">year</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="k">AVG</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">price</span><span class="w"></span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"></span>
+<span class="w">        </span><span class="n">record</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">r</span><span class="w"></span>
+<span class="w">        </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">property</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">prop_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">address</span><span class="w"></span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"></span>
+<span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">locality</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;CHATSWOOD&#39;</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">price</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">100000</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="mi">3000000</span><span class="w"></span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
+<span class="w">        </span><span class="k">year</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+
+<span class="k">SELECT</span><span class="w"></span>
+<span class="w">    </span><span class="k">year</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">PRINTF</span><span class="p">(</span><span class="s1">&#39;$%,d&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">price</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">PRINTF</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="s1">&#39;$%,d&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="c1">-- average over windows of 5 years</span>
+<span class="w">        </span><span class="k">AVG</span><span class="p">(</span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
+<span class="w">                </span><span class="k">year</span><span class="w"> </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"></span>
+<span class="w">                </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span><span class="w"></span>
+<span class="w">        </span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">MA_price</span><span class="w"></span>
+<span class="k">FROM</span><span class="w"></span>
+<span class="w">    </span><span class="n">houseAvg</span><span class="w"></span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
+<span class="w">    </span><span class="k">year</span><span class="w"> </span><span class="k">DESC</span><span class="w"></span>
+<span class="k">LIMIT</span><span class="w"></span>
+<span class="w">    </span><span class="mi">10</span><span class="w"></span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre> * sqlite:///D:\_CORE\static\dataset\Australia\pricefinder\pricefinder_db.sqlite
+Done.
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[&nbsp;]:</div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<table>
+    <tr>
+        <th>year</th>
+        <th>price</th>
+        <th>MA_price</th>
+    </tr>
+    <tr>
+        <td>2021</td>
+        <td>$1,402,727</td>
+        <td>$1,460,592</td>
+    </tr>
+    <tr>
+        <td>2020</td>
+        <td>$1,507,625</td>
+        <td>$1,457,660</td>
+    </tr>
+    <tr>
+        <td>2019</td>
+        <td>$1,401,437</td>
+        <td>$1,428,960</td>
+    </tr>
+    <tr>
+        <td>2018</td>
+        <td>$1,526,583</td>
+        <td>$1,366,697</td>
+    </tr>
+    <tr>
+        <td>2017</td>
+        <td>$1,464,589</td>
+        <td>$1,265,765</td>
+    </tr>
+    <tr>
+        <td>2016</td>
+        <td>$1,388,064</td>
+        <td>$1,130,770</td>
+    </tr>
+    <tr>
+        <td>2015</td>
+        <td>$1,364,129</td>
+        <td>$1,015,995</td>
+    </tr>
+    <tr>
+        <td>2014</td>
+        <td>$1,090,118</td>
+        <td>$883,339</td>
+    </tr>
+    <tr>
+        <td>2013</td>
+        <td>$1,021,926</td>
+        <td>$800,816</td>
+    </tr>
+    <tr>
+        <td>2012</td>
+        <td>$789,614</td>
+        <td>$716,033</td>
+    </tr>
+</table>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h4 id="What-are-the-median-prices-for-Maianbar-in-each-year?">What are the median prices for Maianbar in each year?<a class="anchor-link" href="#What-are-the-median-prices-for-Maianbar-in-each-year?">&#182;</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">sql</span><span class="w"></span>
+
+<span class="k">WITH</span><span class="w"> </span><span class="n">prices</span><span class="w"> </span><span class="k">AS</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"></span>
+<span class="w">        </span><span class="k">CAST</span><span class="p">(</span><span class="n">STRFTIME</span><span class="p">(</span><span class="s1">&#39;%Y&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">record_date</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">integer</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">year</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">price</span><span class="w"></span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"></span>
+<span class="w">        </span><span class="n">record</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">r</span><span class="w"></span>
+<span class="w">        </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">property</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">prop_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">address</span><span class="w"></span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"></span>
+<span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">locality</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;MAIANBAR&#39;</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">price</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">100000</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="mi">3000000</span><span class="w"></span>
+<span class="w">    </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
+<span class="w">        </span><span class="k">year</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+
+<span class="k">SELECT</span><span class="w"></span>
+<span class="w">    </span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">year</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="c1">-- median: if number of record is evevn, pick middle 2 values and take average</span>
+<span class="w">    </span><span class="c1">-- else pick middle value directly</span>
+<span class="w">    </span><span class="k">AVG</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="k">CASE</span><span class="w"></span>
+<span class="w">            </span><span class="k">WHEN</span><span class="w"> </span><span class="n">n_record</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="k">CASE</span><span class="w"></span>
+<span class="w">                </span><span class="c1">-- even number of records, extract middle 2 values</span>
+<span class="w">                </span><span class="k">WHEN</span><span class="w"> </span><span class="n">row_num</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="n">n_record</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">n_record</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">price</span><span class="w"></span>
+<span class="w">            </span><span class="k">END</span><span class="w"></span>
+<span class="w">            </span><span class="k">ELSE</span><span class="w"> </span><span class="k">CASE</span><span class="w"></span>
+<span class="w">                </span><span class="c1">-- odd number, extract middle value</span>
+<span class="w">                </span><span class="k">WHEN</span><span class="w"> </span><span class="n">row_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_record</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">price</span><span class="w"></span>
+<span class="w">            </span><span class="k">END</span><span class="w"></span>
+<span class="w">        </span><span class="k">END</span><span class="w"></span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">year</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">median</span><span class="w"></span>
+<span class="k">FROM</span><span class="w"></span>
+<span class="w">    </span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="k">SELECT</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="c1">-- row number as ordering rank of price in each year</span>
+<span class="w">            </span><span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="p">(</span><span class="w"></span>
+<span class="w">                </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">year</span><span class="w"></span>
+<span class="w">                </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
+<span class="w">                    </span><span class="n">price</span><span class="w"></span>
+<span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">row_num</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="c1">-- number of record in each year</span>
+<span class="w">            </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">year</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">n_record</span><span class="w"></span>
+<span class="w">        </span><span class="k">FROM</span><span class="w"></span>
+<span class="w">            </span><span class="n">prices</span><span class="w"></span>
+<span class="w">    </span><span class="p">)</span><span class="w"></span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre> * sqlite:///D:\_CORE\static\dataset\Australia\pricefinder\pricefinder_db.sqlite
+Done.
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[&nbsp;]:</div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<table>
+    <tr>
+        <th>year</th>
+        <th>median</th>
+    </tr>
+    <tr>
+        <td>2007</td>
+        <td>310000.0</td>
+    </tr>
+    <tr>
+        <td>2012</td>
+        <td>552500.0</td>
+    </tr>
+    <tr>
+        <td>2013</td>
+        <td>890000.0</td>
+    </tr>
+    <tr>
+        <td>2014</td>
+        <td>1005000.0</td>
+    </tr>
+    <tr>
+        <td>2016</td>
+        <td>845000.0</td>
+    </tr>
+    <tr>
+        <td>2018</td>
+        <td>670000.0</td>
+    </tr>
+    <tr>
+        <td>2020</td>
+        <td>789750.0</td>
+    </tr>
+    <tr>
+        <td>2021</td>
+        <td>1435000.0</td>
+    </tr>
+</table>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h4 id="List-the-years-from-2010-to-2021-when-there-was-no-sale-record-of-house-in-Maianbar.">List the years from 2010 to 2021 when there was no sale record of house in Maianbar.<a class="anchor-link" href="#List-the-years-from-2010-to-2021-when-there-was-no-sale-record-of-house-in-Maianbar.">&#182;</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="k">sql</span><span class="w"></span>
+
+<span class="k">WITH</span><span class="w"> </span><span class="n">houseAvg</span><span class="w"> </span><span class="k">AS</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"></span>
+<span class="w">        </span><span class="k">CAST</span><span class="p">(</span><span class="n">STRFTIME</span><span class="p">(</span><span class="s1">&#39;%Y&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">record_date</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">integer</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">year</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="k">AVG</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">price</span><span class="w"></span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"></span>
+<span class="w">        </span><span class="n">record</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">r</span><span class="w"></span>
+<span class="w">        </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">property</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">prop_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">address</span><span class="w"></span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"></span>
+<span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">locality</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;MAIANBAR&#39;</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="k">year</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">2010</span><span class="w"></span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="mi">2021</span><span class="w"></span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"></span>
+<span class="w">        </span><span class="k">year</span><span class="w"></span>
+<span class="p">),</span><span class="w"></span>
+
+<span class="c1">-- generate year series for joining</span>
+<span class="n">year_series</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"></span>
+<span class="w">        </span><span class="mi">2010</span><span class="w"></span>
+<span class="w">    </span><span class="k">UNION</span><span class="w"></span>
+<span class="w">    </span><span class="k">ALL</span><span class="w"></span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"></span>
+<span class="w">        </span><span class="n">value</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"></span>
+<span class="w">        </span><span class="n">year_series</span><span class="w"></span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"></span>
+<span class="w">        </span><span class="n">value</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">2021</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+
+<span class="c1">-- join with year series to find years with missing values</span>
+<span class="k">SELECT</span><span class="w"></span>
+<span class="w">    </span><span class="n">y</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">year</span><span class="w"></span>
+<span class="k">FROM</span><span class="w"></span>
+<span class="w">    </span><span class="n">year_series</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">y</span><span class="w"></span>
+<span class="w">    </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">houseAvg</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">h</span><span class="p">.</span><span class="k">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">.</span><span class="n">value</span><span class="w"></span>
+<span class="k">WHERE</span><span class="w"></span>
+<span class="w">    </span><span class="n">h</span><span class="p">.</span><span class="n">price</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"></span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre> * sqlite:///D:\_CORE\static\dataset\Australia\pricefinder\pricefinder_db.sqlite
+Done.
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[&nbsp;]:</div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<table>
+    <tr>
+        <th>year</th>
+    </tr>
+    <tr>
+        <td>2010</td>
+    </tr>
+    <tr>
+        <td>2011</td>
+    </tr>
+    <tr>
+        <td>2015</td>
+    </tr>
+    <tr>
+        <td>2017</td>
+    </tr>
+    <tr>
+        <td>2019</td>
+    </tr>
+</table>
+</div>
+
 </div>
 
 </div>
